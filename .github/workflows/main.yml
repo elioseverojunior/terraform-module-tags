@@ -1,0 +1,29 @@
+name: Terratest for Terraform
+
+on:
+  push:
+    branches: [ main ]
+
+  pull_request:
+    branches: [ main ]
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.17
+
+      - name: Running TerraTests for Terraform
+        run: |
+          cd ${{ github.workspace }}/test
+          go test
+
+      - run: echo "This job's status is ${{ job.status }}."

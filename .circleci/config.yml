@@ -1,0 +1,45 @@
+version: 2.1
+jobs:
+  test:
+    docker:
+      # specify the version
+      - image: circleci/golang:1.13.4
+
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+          - go-v1-{{ checksum "test/go.sum" }}
+
+      - run: |
+            TFVER=$(cat .terraform-version)
+            if [ ! -f "$HOME/.local/bin/terraform" ]; then
+              mkdir -p $HOME/.local/bin
+              wget https://releases.hashicorp.com/terraform/$TFVER/terraform_"$TFVER"_linux_amd64.zip
+              unzip terraform_"$TFVER"_linux_amd64.zip -d $HOME/.local/bin
+            fi
+
+      # The weird way you have to set PATH in Circle 2.0
+      - run: echo 'export PATH=$HOME/.local/bin:$PATH' >> $BASH_ENV
+
+      - run: echo "credentials \"app.terraform.io\" {token = \"$ATLAS_TOKEN\"}" > $HOME/.terraformrc
+
+      - run: |
+            cd test
+            go test
+      - save_cache:
+          key: go-v1-{{ checksum "test/go.sum" }}
+          paths:
+          - "/go/pkg/mod"
+
+workflows:
+  version: 2
+  test:
+    jobs:
+      - test:
+          context: TFE
+          filters:
+            branches:
+              ignore:
+                - /^main.*/
+                - /^master.*/
